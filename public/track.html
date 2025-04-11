@@ -85,36 +85,55 @@
     </div>
 
     <!-- Click Details Modal -->
-    <div id="clickDetailsModal" class="fixed z-50 inset-0 overflow-y-auto invisible opacity-0 transition-all duration-300 ease-in-out" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeModal()"></div>
-
-            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-            <div class="inline-block align-middle bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:max-w-lg sm:w-full relative">
-                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                    <div class="sm:flex sm:items-start">
-                        <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                                Click Details
-                            </h3>
-                            <div class="mt-4">
-                                <div id="clickDetailsList" class="space-y-4">
-                                    <!-- Click details will be dynamically inserted here -->
-                                </div>
-                            </div>
-                        </div>
+    <div id="clickDetailsModal" class="fixed z-50 inset-0 overflow-y-auto invisible opacity-0 transition-all duration-300 ease-in-out bg-white" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex flex-col h-screen">
+            <!-- Header -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                <h3 class="text-2xl font-bold text-gray-900" id="modal-title">Click Details</h3>
+                <div class="flex items-center space-x-4">
+                    <!-- Sort Controls -->
+                    <div class="flex items-center">
+                        <label class="mr-2 text-sm text-gray-600">Sort by:</label>
+                        <select id="sortOrder" onchange="updateClickDetails()" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="desc">Newest First</option>
+                            <option value="asc">Oldest First</option>
+                        </select>
                     </div>
-                </div>
-                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                    <button type="button" onclick="closeModal()"
-                        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-                        Close
+                    <!-- Close Button -->
+                    <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
-                <button onclick="closeModal()" class="absolute top-0 right-0 p-4 text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times"></i>
-                </button>
+            </div>
+
+            <!-- Main Content -->
+            <div class="flex-1 overflow-y-auto p-6">
+                <!-- Filters -->
+                <div class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="flex items-center">
+                        <label class="mr-2 text-sm text-gray-600">Filter by Country:</label>
+                        <input type="text" id="countryFilter" onkeyup="updateClickDetails()" 
+                            class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 flex-1"
+                            placeholder="Enter country...">
+                    </div>
+                    <div class="flex items-center">
+                        <label class="mr-2 text-sm text-gray-600">Filter by City:</label>
+                        <input type="text" id="cityFilter" onkeyup="updateClickDetails()"
+                            class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 flex-1"
+                            placeholder="Enter city...">
+                    </div>
+                    <div class="flex items-center">
+                        <label class="mr-2 text-sm text-gray-600">Filter by IP:</label>
+                        <input type="text" id="ipFilter" onkeyup="updateClickDetails()"
+                            class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 flex-1"
+                            placeholder="Enter IP...">
+                    </div>
+                </div>
+
+                <!-- Click Details List -->
+                <div id="clickDetailsList" class="space-y-6">
+                    <!-- Click details will be dynamically inserted here -->
+                </div>
             </div>
         </div>
     </div>
@@ -223,43 +242,8 @@
                 // Then remove opacity to trigger fade in
                 modal.classList.remove('opacity-0');
 
-                // Initialize maps for each click
-                link.clicks.forEach(click => {
-                    console.log('Initializing map for click:', click);
-                    const mapId = `map-${click.timestamp.replace(/[^a-zA-Z0-9]/g, '')}`;
-                    
-                    // Wait for the DOM to be updated
-                    setTimeout(() => {
-                        try {
-                            const mapElement = document.getElementById(mapId);
-                            if (!mapElement) {
-                                console.error('Map element not found:', mapId);
-                                return;
-                            }
-
-                            // Default to San Francisco if coordinates are not available
-                            const lat = click.location?.latitude || 37.7749;
-                            const lng = click.location?.longitude || -122.4194;
-                            console.log('Using coordinates:', lat, lng);
-
-                            const map = L.map(mapId).setView([lat, lng], 13);
-                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                                attribution: '© OpenStreetMap contributors'
-                            }).addTo(map);
-
-                            L.marker([lat, lng])
-                                .addTo(map)
-                                .bindPopup(`Click from ${click.location.city || 'Unknown City'}, ${click.location.country || 'Unknown Country'}`);
-
-                            // Force a resize event to ensure the map renders correctly
-                            setTimeout(() => {
-                                map.invalidateSize();
-                            }, 100);
-                        } catch (error) {
-                            console.error('Error initializing map:', error);
-                        }
-                    }, 250); // Increased timeout to ensure DOM is ready
-                });
+                let currentLink = link; // Store the current link data globally
+                updateClickDetails(); // Initial render of click details
                 
                 // Handle clicking outside modal
                 const handleOutsideClick = (e) => {
